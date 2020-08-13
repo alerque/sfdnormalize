@@ -1,4 +1,4 @@
-# SFD Normalizer
+# SFD Normalize
 
 Discard GUI information from SFD files.
 
