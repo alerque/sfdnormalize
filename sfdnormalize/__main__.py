@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # SFD normalizer (discards GUI information from SFD files)
 # (c) 2004, 2005 Stepan Roh (PUBLIC DOMAIN)
 # (c) 2009 Alexey Kryukov
@@ -8,7 +6,7 @@
 # (c) 2020 Waldir Pimenta
 # (c) 2020 Caleb Maclennan
 #
-# usage: ./sfdnormalize.py sfd_file(s)
+# usage: ./sfdnormalize sfd_file(s)
 #  will rewrite files in place
 
 # changes done:
@@ -237,9 +235,12 @@ def process_sfd_file(sfdname, outname):
     out.close()
 
 # Program entry point
-argc = len(sys.argv)
-if argc > 2:
-    process_sfd_file(sys.argv[1], sys.argv[2])
-else:
-    print("Usage: sfdnormalize.py input_file.sfd output_file.sfd")
+def main():
+    argc = len(sys.argv)
+    if argc > 2:
+        process_sfd_file(sys.argv[1], sys.argv[2])
+    else:
+        print("Usage: sfdnormalize input_file.sfd output_file.sfd")
 
+if __name__ == '__main__':
+    main()
