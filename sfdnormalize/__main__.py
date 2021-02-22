@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # SFD normalizer (discards GUI information from SFD files)
 # (c) 2004, 2005 Stepan Roh (PUBLIC DOMAIN)
 # (c) 2009 Alexey Kryukov
