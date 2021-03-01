@@ -226,7 +226,7 @@ def process_sfd_file(sfdname, outname):
                 out.write(fl);
             elif in_chars and curglyph != '':
                 glyphs[curglyph]['lines'].append(fl)
-            elif in_bdf:
+            elif in_bdf and cur_gid in bdf:
                 bdf[cur_gid]['lines'].append(fl)
 
         fl = fp.readline()
