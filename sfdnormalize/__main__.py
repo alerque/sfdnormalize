@@ -44,7 +44,7 @@ FONT_RE = re.compile(r"^SplineFontDB:\s(\d+\.?\d*)")
 DROP_RE = re.compile(r"^(WinInfo|DisplaySize|AntiAlias|FitToEm|Compacted|GenTags|ModificationTime|DupEnc|Copyright)")
 SPLINESET_RE = re.compile(r"^(Fore|Back|SplineSet|Grid)\s*$")
 STARTCHAR_RE = re.compile(r"^StartChar:\s*(\S+)\s*$")
-ENCODING_RE = re.compile(r"^Encoding:\s*(\d+)\s+(\-?\d+)\s*(\d*)\s*$")
+ENCODING_RE = re.compile(r"^Encoding:\s*(\-?\d+)\s+(\-?\d+)\s*(\d*)\s*$")
 BITMAPFONT_RE = re.compile(r"^(BitmapFont:\s+\d+\s+)(\d+)(\s+\d+\s+\d+\s+\d+)")
 BDFCHAR_RE = re.compile(r"^BDFChar:\s*(\d+)(\s+.*)$")
 EMPTY_FLAGS_RE = re.compile(r"^Flags:\s*$")
@@ -136,6 +136,8 @@ def process_sfd_file(sfdname, outname):
             out.write("BeginChars: %s %s\n" % (max_dec_enc + 1, len(glyphs)))
 
             for glyph in glyphs.values():
+                if glyph["dec_enc"] < 0: # GitHub issue alerque/sfdnormalize#3
+                    continue
                 out.write("\n")
                 out.write("StartChar: %s\n" % glyph['name'])
                 out.write("Encoding: %s %s %s\n" % (glyph["dec_enc"], glyph['unicode'], glyph["gid"]))
