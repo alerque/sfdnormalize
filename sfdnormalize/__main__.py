@@ -75,7 +75,12 @@ def process_sfd_file(args):
     sfdname = args.input_file
     outname = args.output_file
     fp = open(sfdname, 'rt')
-    out = open(outname, 'wt')
+
+    if args.replace:
+        out = io.StringIO()
+    else:
+        out = open(outname, 'wt')
+
     fl = fp.readline()
     proc = RegexpProcessor()
 
@@ -234,6 +239,13 @@ def process_sfd_file(args):
         fl = fp.readline()
 
     fp.close()
+
+    if args.replace:
+        out.seek(0)
+        to_write = out.read()
+        out = open(sfdname, "wt+")
+        out.write(to_write)
+
     out.close()
 
 # Program entry point
@@ -242,10 +254,14 @@ def main():
     argparser.add_argument("input_file", help="Input SFD before normalization")
     argparser.add_argument("output_file", help="Path to write normalized SFD", nargs="?")
 
+    argparser.add_argument("--replace", "-r", help="Replace in place", action="store_true")
     argparser.add_argument("--version", "-V", action="version", version="%(prog)s {}".format(VERSION_STR))
 
     argparser.usage = argparser.format_usage().removeprefix("usage: ").rstrip() + "\nhttps://github.com/alerque/sfdnormalize\n(For authors, see AUTHORS in source distribution.)"
     args = argparser.parse_args()
+
+    if not args.output_file and not args.replace:
+        argparser.error(message="Must provide either a file to output to or -r")
 
     process_sfd_file(args)
 
