@@ -1,10 +1,5 @@
 # SFD normalizer (discards GUI information from SFD files)
-# (c) 2004, 2005 Stepan Roh (PUBLIC DOMAIN)
-# (c) 2009 Alexey Kryukov
-# (c) 2018-2020 Khaled Hosny
-# (c) 2018 Skef Iterum
-# (c) 2020 Waldir Pimenta
-# (c) 2020 Caleb Maclennan
+# For authors, see AUTHORS.
 #
 # usage: ./sfdnormalize sfd_file(s)
 #  will rewrite files in place
