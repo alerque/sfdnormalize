@@ -31,6 +31,8 @@ from __future__ import print_function
 
 from collections import OrderedDict
 
+from . import *
+
 import sys, re
 
 fealines_tok = '__X_FEALINES_X__'
