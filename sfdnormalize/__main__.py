@@ -33,7 +33,8 @@ from collections import OrderedDict
 
 from . import *
 
-import sys, re
+import argparse
+import io, sys, re
 
 fealines_tok = '__X_FEALINES_X__'
 
@@ -70,7 +71,9 @@ def normalize_point(m):
     pt = int(m.group(2)) & ~0x4;
     return m.group(1) + str(pt) + m.group(3)
 
-def process_sfd_file(sfdname, outname):
+def process_sfd_file(args):
+    sfdname = args.input_file
+    outname = args.output_file
     fp = open(sfdname, 'rt')
     out = open(outname, 'wt')
     fl = fp.readline()
@@ -235,11 +238,16 @@ def process_sfd_file(sfdname, outname):
 
 # Program entry point
 def main():
-    argc = len(sys.argv)
-    if argc > 2:
-        process_sfd_file(sys.argv[1], sys.argv[2])
-    else:
-        print("Usage: sfdnormalize input_file.sfd output_file.sfd")
+    argparser = argparse.ArgumentParser(description="Normalize Spline Font Database (SFD) files", prog=NAME, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    argparser.add_argument("input_file", help="Input SFD before normalization")
+    argparser.add_argument("output_file", help="Path to write normalized SFD", nargs="?")
+
+    argparser.add_argument("--version", "-V", action="version", version="%(prog)s {}".format(VERSION_STR))
+
+    argparser.usage = argparser.format_usage().removeprefix("usage: ").rstrip() + "\nhttps://github.com/alerque/sfdnormalize\n(For authors, see AUTHORS in source distribution.)"
+    args = argparser.parse_args()
+
+    process_sfd_file(args)
 
 if __name__ == '__main__':
     main()
