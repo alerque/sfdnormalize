@@ -88,7 +88,7 @@ def process_sfd_file(args):
         print("%s is not a valid spline font database" % sfdname)
         return
 
-    out.write("SplineFontDB: 3.0\n")
+    out.write("SplineFontDB: {}\n".format(args.sfd_version))
 
     curglyph = ''
     cur_gid = 0
@@ -256,6 +256,7 @@ def main():
 
     argparser.add_argument("--replace", "-r", help="Replace in place", action="store_true")
     argparser.add_argument("--version", "-V", action="version", version="%(prog)s {}".format(VERSION_STR))
+    argparser.add_argument("--sfd-version", "-s", help="By default, latest SFD revision known to this program will be written, unless specified here", default=SFD_VERSION_STR, metavar="VERSION")
 
     argparser.usage = argparser.format_usage().removeprefix("usage: ").rstrip() + "\nhttps://github.com/alerque/sfdnormalize\n(For authors, see AUTHORS in source distribution.)"
     args = argparser.parse_args()
