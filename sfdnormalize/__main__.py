@@ -105,7 +105,7 @@ def process_sfd_file(args):
 
     fl = fp.readline()
     while fl:
-        if proc.test(DROP_RE, fl):
+        if proc.test(DROP_RE, fl) and not any([fl.startswith(k) for k in args.keep]):
             fl = fp.readline()
             continue
 
@@ -256,6 +256,7 @@ def main():
 
     argparser.add_argument("--replace", "-r", help="Replace in place", action="store_true")
     argparser.add_argument("--version", "-V", action="version", version="%(prog)s {}".format(VERSION_STR))
+    argparser.add_argument("--keep", "-k", help="Keep lines beginning with these even if they'd be normally dropped. (Can provide multiple times.)", action="append")
     argparser.add_argument("--sfd-version", "-s", help="By default, latest SFD revision known to this program will be written, unless specified here", default=SFD_VERSION_STR, metavar="VERSION")
 
     argparser.usage = argparser.format_usage().removeprefix("usage: ").rstrip() + "\nhttps://github.com/alerque/sfdnormalize\n(For authors, see AUTHORS in source distribution.)"
