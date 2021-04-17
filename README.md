@@ -1,5 +1,7 @@
 # SFD Normalize
 
+[![Build](https://github.com/alerque/sfdnormalize/actions/workflows/build.yml/badge.svg)](https://github.com/alerque/sfdnormalize/actions/workflows/build.yml)
+
 Discard GUI information from SFD files.
 
 ## History
