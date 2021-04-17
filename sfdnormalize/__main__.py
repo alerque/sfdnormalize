@@ -1,10 +1,5 @@
 # SFD normalizer (discards GUI information from SFD files)
-# (c) 2004, 2005 Stepan Roh (PUBLIC DOMAIN)
-# (c) 2009 Alexey Kryukov
-# (c) 2018-2020 Khaled Hosny
-# (c) 2018 Skef Iterum
-# (c) 2020 Waldir Pimenta
-# (c) 2020 Caleb Maclennan
+# For authors, see AUTHORS.
 #
 # usage: ./sfdnormalize sfd_file(s)
 #  will rewrite files in place
@@ -36,7 +31,10 @@ from __future__ import print_function
 
 from collections import OrderedDict
 
-import sys, re
+from . import *
+
+import argparse
+import io, sys, re
 
 fealines_tok = '__X_FEALINES_X__'
 
@@ -73,9 +71,16 @@ def normalize_point(m):
     pt = int(m.group(2)) & ~0x4;
     return m.group(1) + str(pt) + m.group(3)
 
-def process_sfd_file(sfdname, outname):
+def process_sfd_file(args):
+    sfdname = args.input_file
+    outname = args.output_file
     fp = open(sfdname, 'rt')
-    out = open(outname, 'wt')
+
+    if args.replace:
+        out = io.StringIO()
+    else:
+        out = open(outname, 'wt')
+
     fl = fp.readline()
     proc = RegexpProcessor()
 
@@ -83,7 +88,7 @@ def process_sfd_file(sfdname, outname):
         print("%s is not a valid spline font database" % sfdname)
         return
 
-    out.write("SplineFontDB: 3.0\n")
+    out.write("SplineFontDB: {}\n".format(args.sfd_version))
 
     curglyph = ''
     cur_gid = 0
@@ -100,7 +105,7 @@ def process_sfd_file(sfdname, outname):
 
     fl = fp.readline()
     while fl:
-        if proc.test(DROP_RE, fl):
+        if proc.test(DROP_RE, fl) and not any([fl.startswith(k) for k in args.keep]):
             fl = fp.readline()
             continue
 
@@ -234,15 +239,33 @@ def process_sfd_file(sfdname, outname):
         fl = fp.readline()
 
     fp.close()
+
+    if args.replace:
+        out.seek(0)
+        to_write = out.read()
+        out = open(sfdname, "wt+")
+        out.write(to_write)
+
     out.close()
 
 # Program entry point
 def main():
-    argc = len(sys.argv)
-    if argc > 2:
-        process_sfd_file(sys.argv[1], sys.argv[2])
-    else:
-        print("Usage: sfdnormalize input_file.sfd output_file.sfd")
+    argparser = argparse.ArgumentParser(description="Normalize Spline Font Database (SFD) files", prog=NAME, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    argparser.add_argument("input_file", help="Input SFD before normalization")
+    argparser.add_argument("output_file", help="Path to write normalized SFD", nargs="?")
+
+    argparser.add_argument("--replace", "-r", help="Replace in place", action="store_true")
+    argparser.add_argument("--version", "-V", action="version", version="%(prog)s {}".format(VERSION_STR))
+    argparser.add_argument("--keep", "-k", help="Keep lines beginning with these even if they'd be normally dropped. (Can provide multiple times.)", action="append")
+    argparser.add_argument("--sfd-version", "-s", help="By default, latest SFD revision known to this program will be written, unless specified here", default=SFD_VERSION_STR, metavar="VERSION")
+
+    argparser.usage = argparser.format_usage().removeprefix("usage: ").rstrip() + "\nhttps://github.com/alerque/sfdnormalize\n(For authors, see AUTHORS in source distribution.)"
+    args = argparser.parse_args()
+
+    if not args.output_file and not args.replace:
+        argparser.error(message="Must provide either a file to output to or -r")
+
+    process_sfd_file(args)
 
 if __name__ == '__main__':
     main()
