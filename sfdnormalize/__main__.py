@@ -259,7 +259,8 @@ def main():
     argparser.add_argument("--keep", "-k", help="Keep lines beginning with these even if they'd be normally dropped. (Can provide multiple times.)", action="append")
     argparser.add_argument("--sfd-version", "-s", help="By default, latest SFD revision known to this program will be written, unless specified here", default=SFD_VERSION_STR, metavar="VERSION")
 
-    argparser.usage = argparser.format_usage().removeprefix("usage: ").rstrip() + "\nhttps://github.com/alerque/sfdnormalize\n(For authors, see AUTHORS in source distribution.)"
+    # Note [len('usage: '):] hack is removeprefix("usage: ") from Python 3.9+, cleanup if we ever require new Python for something else
+    argparser.usage = argparser.format_usage()[len('usage: '):].rstrip() + "\nhttps://github.com/alerque/sfdnormalize\n(For authors, see AUTHORS in source distribution.)"
     args = argparser.parse_args()
 
     if not args.output_file and not args.replace:
