@@ -105,9 +105,10 @@ def process_sfd_file(args):
 
     fl = fp.readline()
     while fl:
-        if proc.test(DROP_RE, fl) and not any([fl.startswith(k) for k in args.keep]):
-            fl = fp.readline()
-            continue
+        if proc.test(DROP_RE, fl):
+            if args.keep == None or not any([fl.startswith(k) for k in args.keep]):
+                fl = fp.readline()
+                continue
 
         elif in_chars:
             # Cleanup glyph flags
