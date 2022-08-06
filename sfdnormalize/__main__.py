@@ -30,6 +30,7 @@
 from __future__ import print_function
 
 from collections import OrderedDict
+from typing import Optional, List
 
 from . import *
 
@@ -38,8 +39,15 @@ import io, sys, re
 
 fealines_tok = '__X_FEALINES_X__'
 
+DROPPED = [
+    "WinInfo", "DisplaySize", "AntiAlias", "FitToEm", "Compacted", "GenTags",
+    "ModificationTime", "DupEnc", "Copyright"
+]
+
+drop_regex = lambda extra: "^(" + "|".join(DROPPED + extra) + ")"
+
 FONT_RE = re.compile(r"^SplineFontDB:\s(\d+\.?\d*)")
-DROP_RE = re.compile(r"^(WinInfo|DisplaySize|AntiAlias|FitToEm|Compacted|GenTags|ModificationTime|DupEnc|Copyright)")
+DROP_RE = re.compile(drop_regex([]))
 SPLINESET_RE = re.compile(r"^(Fore|Back|SplineSet|Grid)\s*$")
 STARTCHAR_RE = re.compile(r"^StartChar:\s*(\S+)\s*$")
 ENCODING_RE = re.compile(r"^Encoding:\s*(\-?\d+)\s+(\-?\d+)\s*(\d*)\s*$")
@@ -70,6 +78,9 @@ class RegexpProcessor:
 def normalize_point(m):
     pt = int(m.group(2)) & ~0x4;
     return m.group(1) + str(pt) + m.group(3)
+
+def should_drop(proc: RegexpProcessor, fl: str, keep: Optional[List[str]] = None) -> bool:
+    return proc.test(DROP_RE, fl) and (keep == None or not any([fl.startswith(k) for k in keep]))
 
 def process_sfd_file(args):
     sfdname = args.input_file
@@ -105,10 +116,9 @@ def process_sfd_file(args):
 
     fl = fp.readline()
     while fl:
-        if proc.test(DROP_RE, fl):
-            if args.keep == None or not any([fl.startswith(k) for k in args.keep]):
-                fl = fp.readline()
-                continue
+        if should_drop(proc, fl, keep=args.keep):
+            fl = fp.readline()
+            continue
 
         elif in_chars:
             # Cleanup glyph flags
@@ -149,6 +159,8 @@ def process_sfd_file(args):
                 out.write("Encoding: %s %s %s\n" % (glyph["dec_enc"], glyph['unicode'], glyph["gid"]))
 
                 for gl in glyph['lines']:
+                    if should_drop(proc, gl, keep=args.keep):
+                        continue
                     if gl.startswith("Refer: "):
                         # deselect selected references
                         gl = SELECTED_REF_RE.sub(r"\1N\2", gl)
@@ -258,11 +270,16 @@ def main():
     argparser.add_argument("--replace", "-r", help="Replace in place", action="store_true")
     argparser.add_argument("--version", "-V", action="version", version="%(prog)s {}".format(VERSION_STR))
     argparser.add_argument("--keep", "-k", help="Keep lines beginning with these even if they'd be normally dropped. (Can provide multiple times.)", action="append")
+    argparser.add_argument("--drop", "-D", help="Drop lines beginning with these even if they'd be normally kept. (Can provide multiple times.)", action="append")
     argparser.add_argument("--sfd-version", "-s", help="By default, latest SFD revision known to this program will be written, unless specified here", default=SFD_VERSION_STR, metavar="VERSION")
 
     # Note [len('usage: '):] hack is removeprefix("usage: ") from Python 3.9+, cleanup if we ever require new Python for something else
     argparser.usage = argparser.format_usage()[len('usage: '):].rstrip() + "\nhttps://github.com/alerque/sfdnormalize\n(For authors, see AUTHORS in source distribution.)"
     args = argparser.parse_args()
+
+    if len(args.drop) > 0:
+        global DROP_RE
+        DROP_RE = re.compile(drop_regex(args.drop))
 
     if not args.output_file and not args.replace:
         argparser.error(message="Must provide either a file to output to or -r")
