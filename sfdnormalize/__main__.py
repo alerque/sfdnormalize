@@ -43,6 +43,7 @@ fealines_tok = '__X_FEALINES_X__'
 FONT_RE = re.compile(r"^SplineFontDB:\s(\d+\.?\d*)")
 DROP_RE = re.compile(r"^(WinInfo|DisplaySize|AntiAlias|FitToEm|Compacted|GenTags|ModificationTime|DupEnc|Copyright)")
 SPLINESET_RE = re.compile(r"^(Fore|Back|SplineSet|Grid)\s*$")
+BACK_RE = re.compile(r"^Back$")
 STARTCHAR_RE = re.compile(r"^StartChar:\s*(\S+)\s*$")
 ENCODING_RE = re.compile(r"^Encoding:\s*(\-?\d+)\s+(\-?\d+)\s*(\d*)\s*$")
 BITMAPFONT_RE = re.compile(r"^(BitmapFont:\s+\d+\s+)(\d+)(\s+\d+\s+\d+\s+\d+)")
@@ -54,7 +55,8 @@ SELECTED_REF_RE = re.compile(r"(-?\d+\s+)S(\s+-?\d+)")
 OTFFEATNAME_RE = re.compile(r"OtfFeatName:\s*'(....)'\s*(\d+)\s*(.*)$")
 HINTS_RE = re.compile(r"^[HVD]Stem2?: ")
 FEASUBPOS_RE = re.compile(r"^(Position|PairPos|LCarets|Ligature|Substitution|MultipleSubs|AlternateSubs)2?:")
-ANCHORPOINT_RE = re.compile(r"""^AnchorPoint:\s*("[^"]*")\s*(\d+)\s*(\d+)\s*([a-z0-9]+)\s*(\d+)$""")
+FLOAT_REGEX = r"([-+]?(?:(?:\d*\.\d+)|\d+))"
+ANCHORPOINT_RE = re.compile(fr"""^AnchorPoint:\s*("[^"]*")\s*{FLOAT_REGEX}\s*{FLOAT_REGEX}\s*([a-z0-9]+)\s*(\d+)$""")
 
 fealine_order = {'Position': 1, 'PairPos': 2, 'LCarets': 3, 'Ligature': 4,
                  'Substitution': 5, 'MultipleSubs': 6, 'AlternateSubs': 7 }
@@ -152,7 +154,11 @@ def process_sfd_file(args):
                 out.write("Encoding: %s %s %s\n" % (glyph["dec_enc"], glyph['unicode'], glyph["gid"]))
 
                 glyph_lines = iter(glyph['lines'])
+                skip_lines = 0
                 for gl in glyph_lines:
+                    if skip_lines > 0:
+                        skip_lines -= 1
+                        continue
                     if gl.startswith("Refer: "):
                         # deselect selected references
                         gl = SELECTED_REF_RE.sub(r"\1N\2", gl)
@@ -168,10 +174,12 @@ def process_sfd_file(args):
                         continue
                     elif proc.test(ANCHORPOINT_RE, gl):
                         anchorpoints = list()
-                        while proc.test(ANCHORPOINT_RE, gl):
-                            matched = proc.match().groups()
-                            anchorpoints.append(list(matched))
-                            gl = next(glyph_lines)
+                        skip_lines -= 1
+                        for ggl in glyph['lines']:
+                            if proc.test(ANCHORPOINT_RE, ggl):
+                                skip_lines += 1
+                                matched = proc.match().groups()
+                                anchorpoints.append(list(matched))
                         for i, ap in enumerate(anchorpoints, start=0):
                             ap[0] = sfdutf7.decode(ap[0].encode('ascii'), quote=True)
                             anchorpoints[i] = tuple(ap)
@@ -183,6 +191,7 @@ def process_sfd_file(args):
                                       (sfdutf7.encode(ap,
                                                       quote=True).decode('ascii'),
                                        " ".join(anchorpoints_d[ap])))
+
                         continue
 
                     out.write(gl)
