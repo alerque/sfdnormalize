@@ -1,12 +1,9 @@
-from sfdnormalize import NAME, VERSION_STR
 import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name=NAME,
-    version=VERSION_STR,
     author="Caleb Maclennan",
     author_email="caleb@alerque.com",
     description="Discard GUI information from SFD files",

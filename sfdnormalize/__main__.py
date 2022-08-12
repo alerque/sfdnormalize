@@ -37,6 +37,8 @@ from . import *
 import argparse
 import io, sys, re
 
+import sfdutf7
+
 fealines_tok = '__X_FEALINES_X__'
 
 DROPPED = [
@@ -49,6 +51,7 @@ drop_regex = lambda extra: "^(" + "|".join(DROPPED + extra) + ")"
 FONT_RE = re.compile(r"^SplineFontDB:\s(\d+\.?\d*)")
 DROP_RE = re.compile(drop_regex([]))
 SPLINESET_RE = re.compile(r"^(Fore|Back|SplineSet|Grid)\s*$")
+BACK_RE = re.compile(r"^Back$")
 STARTCHAR_RE = re.compile(r"^StartChar:\s*(\S+)\s*$")
 ENCODING_RE = re.compile(r"^Encoding:\s*(\-?\d+)\s+(\-?\d+)\s*(\d*)\s*$")
 BITMAPFONT_RE = re.compile(r"^(BitmapFont:\s+\d+\s+)(\d+)(\s+\d+\s+\d+\s+\d+)")
@@ -60,6 +63,8 @@ SELECTED_REF_RE = re.compile(r"(-?\d+\s+)S(\s+-?\d+)")
 OTFFEATNAME_RE = re.compile(r"OtfFeatName:\s*'(....)'\s*(\d+)\s*(.*)$")
 HINTS_RE = re.compile(r"^[HVD]Stem2?: ")
 FEASUBPOS_RE = re.compile(r"^(Position|PairPos|LCarets|Ligature|Substitution|MultipleSubs|AlternateSubs)2?:")
+FLOAT_REGEX = r"([-+]?(?:(?:\d*\.\d+)|\d+))"
+ANCHORPOINT_RE = re.compile(fr"""^AnchorPoint:\s*("[^"]*")\s*{FLOAT_REGEX}\s*{FLOAT_REGEX}\s*([a-z0-9]+)\s*(\d+)$""")
 
 fealine_order = {'Position': 1, 'PairPos': 2, 'LCarets': 3, 'Ligature': 4,
                  'Substitution': 5, 'MultipleSubs': 6, 'AlternateSubs': 7 }
@@ -158,7 +163,12 @@ def process_sfd_file(args):
                 out.write("StartChar: %s\n" % glyph['name'])
                 out.write("Encoding: %s %s %s\n" % (glyph["dec_enc"], glyph['unicode'], glyph["gid"]))
 
-                for gl in glyph['lines']:
+                glyph_lines = iter(glyph['lines'])
+                skip_lines = 0
+                for gl in glyph_lines:
+                    if skip_lines > 0:
+                        skip_lines -= 1
+                        continue
                     if should_drop(proc, gl, keep=args.keep):
                         continue
                     if gl.startswith("Refer: "):
@@ -174,6 +184,28 @@ def process_sfd_file(args):
                         continue
                     elif gl.startswith("Validated:"):
                         continue
+                    elif proc.test(ANCHORPOINT_RE, gl):
+                        anchorpoints = list()
+                        skip_lines -= 1
+                        for ggl in glyph['lines']:
+                            if proc.test(ANCHORPOINT_RE, ggl):
+                                skip_lines += 1
+                                matched = proc.match().groups()
+                                anchorpoints.append(list(matched))
+                        for i, ap in enumerate(anchorpoints, start=0):
+                            ap[0] = sfdutf7.decode(ap[0].encode('ascii'), quote=True)
+                            anchorpoints[i] = tuple(ap)
+                        anchorpoints_d = {ap[0]: dict() for ap in anchorpoints}
+                        for ap in anchorpoints:
+                            anchorpoints_d[ap[0]] = ap[1:]
+                        for ap in sorted(set(anchorpoints_d.keys())):
+                            out.write("AnchorPoint: %s %s\n" %
+                                      (sfdutf7.encode(ap,
+                                                      quote=True).decode('ascii'),
+                                       " ".join(anchorpoints_d[ap])))
+
+                        continue
+
                     out.write(gl)
                 out.write("EndChar\n")
 
@@ -263,7 +295,7 @@ def process_sfd_file(args):
 
 # Program entry point
 def main():
-    argparser = argparse.ArgumentParser(description="Normalize Spline Font Database (SFD) files", prog=NAME, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    argparser = argparse.ArgumentParser(description="Normalize Spline Font Database (SFD) files", prog=__package__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     argparser.add_argument("input_file", help="Input SFD before normalization")
     argparser.add_argument("output_file", help="Path to write normalized SFD", nargs="?")
 
