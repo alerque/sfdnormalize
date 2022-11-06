@@ -193,7 +193,7 @@ def process_sfd_file(args):
                                 matched = proc.match().groups()
                                 anchorpoints.append(list(matched))
                         for i, ap in enumerate(anchorpoints, start=0):
-                            ap[0] = sfdutf7.decode(ap[0].encode('ascii'), quote=True)
+                            ap[0] = sfdutf7.decode(ap[0].encode('ascii'), unquote=True)
                             anchorpoints[i] = tuple(ap)
                         anchorpoints_d = {ap[0]: dict() for ap in anchorpoints}
                         for ap in anchorpoints:
