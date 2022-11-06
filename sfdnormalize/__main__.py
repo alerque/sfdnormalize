@@ -309,7 +309,7 @@ def main():
     argparser.usage = argparser.format_usage()[len('usage: '):].rstrip() + "\nhttps://github.com/alerque/sfdnormalize\n(For authors, see AUTHORS in source distribution.)"
     args = argparser.parse_args()
 
-    if len(args.drop) > 0:
+    if args.drop and len(args.drop) > 0:
         global DROP_RE
         DROP_RE = re.compile(drop_regex(args.drop))
 
