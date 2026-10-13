@@ -195,12 +195,10 @@ def process_sfd_file(args):
                         for i, ap in enumerate(anchorpoints, start=0):
                             ap[0] = sfdutf7.decode(ap[0].encode('ascii'), unquote=True)
                             anchorpoints[i] = tuple(ap)
-                        anchorpoints_d = {ap[0]: dict() for ap in anchorpoints}
-                        for ap in anchorpoints:
-                            anchorpoints_d[ap[0]] = ap[1:]
+                        anchorpoints_d = {(ap[0], ap[3]): ap[1:] for ap in anchorpoints}
                         for ap in sorted(set(anchorpoints_d.keys())):
                             out.write("AnchorPoint: %s %s\n" %
-                                      (sfdutf7.encode(ap,
+                                      (sfdutf7.encode(ap[0],
                                                       quote=True).decode('ascii'),
                                        " ".join(anchorpoints_d[ap])))
 
